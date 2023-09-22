@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  clickhouse-01:
+    image: "clickhouse/clickhouse-server:23.3.13.6"
+    user: "101:101"
+    container_name: clickhouse-01
+    hostname: clickhouse-01
+    volumes:
+      - ./clickhouse/ch01/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./clickhouse/ch01/users.xml:/etc/clickhouse-server/users.d/users.xml
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    depends_on:
+      - zookeeper      
+  clickhouse-02:
+    image: "clickhouse/clickhouse-server:23.3.13.6"
+    user: "101:101"
+    container_name: clickhouse-02
+    hostname: clickhouse-02
+    volumes:
+      - ./clickhouse/ch02/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./clickhouse/ch02/users.xml:/etc/clickhouse-server/users.d/users.xml
+    ports:
+      - "127.0.0.1:8124:8123"
+      - "127.0.0.1:9001:9000"
+    depends_on:
+      - zookeeper      
+  zookeeper:
+    image: zookeeper:3.7
+    container_name: zookeeper
+    hostname: zookeeper
+    ports:
+        - "127.0.0.1:2181:2181"
+  liquibase:      
+      image: liquibase/liquibase
+      command: --defaultsFile=/liquibase/my_changelog/liquibase.properties --changeLogFile=/my_changelog/changelog.xml --logLevel=debug update      
+      container_name: liquibase
+      volumes:
+        - .\liquibase\my_changelog:/liquibase/my_changelog        
+        - .\liquibase\lib\clickhouse.jar:/liquibase/lib/clickhouse.jar        
+        - .\liquibase\lib\liquibaseClickhouse.conf:/liquibase/lib/liquibaseClickhouse.conf
+        - .\migrations:/liquibase/scripts
+      depends_on:
+      - clickhouse-01
+      - clickhouse-02   
+  
